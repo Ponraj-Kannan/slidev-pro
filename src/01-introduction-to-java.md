@@ -45,7 +45,7 @@ src: ../slides/Operators/Operators.md
 
 <!-- Decision Making Statements -->
 ---
-src: ../slides/Decision_Making/Decision_Making.md
+src: ../slides/DecisionMaking/DecisionMaking.md
 ---
 
 <!-- Loops -->
