@@ -7,6 +7,10 @@ src: ./slide2.md
 ---
 
 ---
+src: ./slide7.md
+---
+
+---
 src: ./slide3.md
 ---
 
@@ -20,10 +24,6 @@ src: ./slide5.md
 
 ---
 src: ./slide6.md
----
-
----
-src: ./slide7.md
 ---
 
 ---
