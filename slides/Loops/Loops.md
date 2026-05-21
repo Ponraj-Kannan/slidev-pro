@@ -1,8 +1,4 @@
 ---
-src: ./looping.md
----
-
----
 src: ./slide1.md
 ---
 
