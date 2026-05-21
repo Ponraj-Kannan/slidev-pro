@@ -14,7 +14,7 @@ const contents = [
   // },
   { text: '<b>Return type</b> — declared before the method name; must exactly match what is returned' },
   { text: '<b>void</b> — no return value' },
-  { text: '<b>Premitive and Non-premitive Data types</b> — method returns a value of the same type' },
+  { text: '<b>Primitive and Non-primitive Data types</b> — method returns a value of the same type' },
   { text: '<b>return statement</b> — exits the method immediately; any code after it is unreachable' },
   { text: '<b>Note:</b> Every non-void method must have a return statement that covers all code paths, otherwise a compile error occurs.', highlight: true },
 ]
