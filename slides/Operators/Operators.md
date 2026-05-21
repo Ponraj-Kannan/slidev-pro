@@ -1,6 +1,3 @@
----
-src: ./operators.md
----
 
 ---
 src: ./slide1.md
