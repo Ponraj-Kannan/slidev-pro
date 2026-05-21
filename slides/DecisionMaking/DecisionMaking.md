@@ -1,8 +1,4 @@
 ---
-src: ./decision-making.md
----
-
----
 src: ./slide1.md
 ---
 
