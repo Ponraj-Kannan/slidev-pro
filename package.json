@@ -43,6 +43,7 @@
   "dependencies": {
     "@slidev/cli": "latest",
     "@slidev/theme-default": "latest",
+    "firebase": "^12.13.0",
     "monaco-editor": "^0.46.0",
     "vue": "^3.4.0"
   },

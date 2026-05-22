@@ -1,1 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+/* Hide all presentation layouts, navigation, and controls by default */
+.slidev-layout,
+.slidev-nav,
+.controls,
+#window-controls,
+#bar,
+.slidev-presentation {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Show them only when auth is successful */
+html.auth-success .slidev-layout,
+html.auth-success .slidev-nav,
+html.auth-success .controls,
+html.auth-success #window-controls,
+html.auth-success #bar,
+html.auth-success .slidev-presentation {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}

@@ -16,6 +16,5 @@ const style = computed(() => handleBackground(props.background, true))
     <div class="my-auto w-full">
       <slot />
     </div>
-    <GlobalBottom />
   </div>
 </template>
