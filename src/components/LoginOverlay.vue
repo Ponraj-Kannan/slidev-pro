@@ -640,7 +640,7 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   width: 100vw;
-  height: 76vh;
+  height: 100vh;
   /* background: #7491ad; */
   display: flex;
   justify-content: center;
@@ -813,7 +813,7 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   width: 100%;
-  height: 77vh;
+  height: 100vh;
   background: rgba(241, 245, 249, 0.8);
   /* backdrop-filter: blur(10px); */
   display: flex;
@@ -835,6 +835,7 @@ onUnmounted(() => {
   flex-direction: column;
   height: 50vh;
   box-sizing: border-box;
+  margin-top: -200px;
 }
 
 .admin-header {
@@ -890,23 +891,22 @@ onUnmounted(() => {
 }
 
 .admin-body {
-  padding: 1.5rem;
+  padding: 10px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
 }
 
 .success-banner {
   background: rgba(34, 197, 94, 0.05);
   border: 1px solid rgba(34, 197, 94, 0.15);
   border-radius: 8px;
-  padding: 0.75rem 1rem;
+  padding: 10px 20px;
   display: flex;
   gap: 0.75rem;
   align-items: center;
   color: #166534;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 
 .success-icon {
