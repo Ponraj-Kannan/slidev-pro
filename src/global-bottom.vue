@@ -7,8 +7,10 @@ import { authState, logout } from './auth'
 const { currentPage, total } = useNav()
 const { $frontmatter } = useSlideContext()
 
+const courseName = computed(() => $frontmatter.value?.courseName || 'Java Programming')
 const sessionLabel = computed(() => $frontmatter.value?.sessionLabel || 'Session')
 const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontmatter.value?.title || 'Untitled Deck')
+const footerModule = computed(() => $frontmatter.value?.footerModule || `${sessionLabel.value} - ${sessionTitle.value}`)
 </script>
 
 <template>
@@ -17,7 +19,16 @@ const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontma
     <LoginOverlay />
 
     <!-- Slides Footer - only visible when logged in -->
-    <div class="fp-footer" v-if="authState.isLoggedIn" >
+    <div class="fp-footer" v-if="authState.isLoggedIn">
+      <div class="fp-brand">
+        <div class="fp-logo"><span class="fp-logo-f">F</span></div>
+        <span class="fp-name">FACEPrep</span>
+        <span class="fp-divider">|</span>
+        <span class="fp-course">{{ courseName }}</span>
+      </div>
+      <div class="fp-slide-info">
+        <span class="fp-module">{{ footerModule }}</span>
+      </div>
       <div class="fp-right-section">
         <!-- Whitelist Admin Panel Button -->
         <button 
@@ -48,6 +59,8 @@ const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontma
           </button>
         </div>
 
+        <span class="fp-divider">|</span>
+
         <!-- Page numbers -->
         <div class="fp-page">
           <span class="fp-page-num">{{ currentPage }}</span>
@@ -66,16 +79,60 @@ const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontma
   left: 0;
   right: 0;
   height: 38px;
-  border-top: 1px solid #ff5900;
+  background: #0f172a;
+  border-top: 2px solid #ff5900;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: right;
+  justify-content: space-between;
   padding: 0 1.5rem;
   z-index: 100;
   font-family: 'Inter', system-ui, sans-serif;
-  width: 94%;
-  margin-left: 2.5%;
+}
+
+.fp-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fp-logo {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #ff5900, #ff8c42);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fp-logo-f {
+  color: white;
+  font-weight: 900;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.fp-name {
+  color: #ff5900;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.fp-divider {
+  color: #334155;
+  font-size: 0.75rem;
+}
+
+.fp-course {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.fp-slide-info {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .fp-module {
@@ -170,11 +227,8 @@ const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontma
 
 .fp-page {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: right;
   gap: 0.25rem;
-  width: 70px;
 }
 
 .fp-page-num {
