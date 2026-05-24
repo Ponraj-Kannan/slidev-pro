@@ -351,8 +351,9 @@ onUnmounted(() => {
           <!-- Brand header -->
           <div class="brand-container">
             <div class="brand-logo">
-              <img  src="../assets/logo.png" style="width: 150px;"/>
+              <span class="logo-f">F</span>
             </div>
+            <h1 class="brand-title">FACEPrep</h1>
             <p class="brand-tagline">{{ isAdminPage ? 'Admin Whitelist Portal' : 'Interactive Slide Deck Portal' }}</p>
           </div>
 
@@ -403,6 +404,10 @@ onUnmounted(() => {
                 </div>
               </Transition>
             </template>
+          </div>
+
+          <div class="login-footer">
+            <span>Whitelisted logins only.</span>
           </div>
         </div>
       </div>
@@ -523,8 +528,9 @@ onUnmounted(() => {
         <div class="login-card">
           <div class="brand-container">
             <div class="brand-logo">
-              <img  src="../assets/logo.png" style="width: 150px;"/>
+              <span class="logo-f">F</span>
             </div>
+            <h1 class="brand-title">FACEPrep</h1>
             <p class="brand-tagline">Admin Portal</p>
           </div>
           <div class="divider"></div>
@@ -641,7 +647,7 @@ onUnmounted(() => {
   inset: 0;
   width: 100vw;
   height: 100vh;
-  /* background: #7491ad; */
+  background: #f8fafc;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -713,7 +719,7 @@ onUnmounted(() => {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 10px;
+  border-radius: 20px;
   box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
   padding: 2.5rem;
   display: flex;
@@ -732,13 +738,35 @@ onUnmounted(() => {
 }
 
 .brand-logo {
-  width: 80%;
-  height: 20px;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #ef5050, #f87171);
+  border-radius: 12px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 20px rgba(239, 80, 80, 0.2);
   margin-bottom: 0.75rem;
+}
+
+.logo-f {
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  font-size: 1.5rem;
+}
+
+.brand-title {
+  color: #1e293b;
+  font-family: 'Outfit', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  background: linear-gradient(135deg, #1e293b, #475569);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .brand-tagline {
@@ -812,10 +840,10 @@ onUnmounted(() => {
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
-  width: 100%;
+  width: 100vw;
   height: 100vh;
   background: rgba(241, 245, 249, 0.8);
-  /* backdrop-filter: blur(10px); */
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -829,23 +857,20 @@ onUnmounted(() => {
   max-width: 580px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 16px;
   box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.1);
   display: flex;
   flex-direction: column;
-  height: 50vh;
+  max-height: 85vh;
   box-sizing: border-box;
-  margin-top: -200px;
 }
 
 .admin-header {
-  padding: 1rem 1rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* background-color: paleturquoise; */
-  height: 44px;
 }
 
 .admin-header-title {
@@ -856,8 +881,8 @@ onUnmounted(() => {
 
 .admin-header-title h2 {
   color: #1e293b;
-  font-size: .8rem;
-  font-weight: 500;
+  font-size: 1.15rem;
+  font-weight: 600;
   margin: 0;
 }
 
@@ -891,22 +916,23 @@ onUnmounted(() => {
 }
 
 .admin-body {
-  padding: 10px;
+  padding: 1.5rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  gap: 1.25rem;
 }
 
 .success-banner {
   background: rgba(34, 197, 94, 0.05);
   border: 1px solid rgba(34, 197, 94, 0.15);
   border-radius: 8px;
-  padding: 10px 20px;
+  padding: 0.75rem 1rem;
   display: flex;
   gap: 0.75rem;
   align-items: center;
   color: #166534;
-  font-size: 0.7rem;
+  font-size: 0.85rem;
 }
 
 .success-icon {
@@ -928,7 +954,7 @@ onUnmounted(() => {
 }
 
 .form-textarea {
-  min-height: 30px;
+  min-height: 70px;
   resize: vertical;
   font-family: inherit;
   line-height: 1.4;
@@ -970,12 +996,12 @@ onUnmounted(() => {
 
 .form-input {
   flex: 1;
-  background: #b6b6b620;
-  border: 1px solid #383838;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 10px;
+  padding: 0.75rem 1rem;
   color: #1e293b;
-  font-size: 0.7rem;
+  font-size: 0.88rem;
   outline: none;
   transition: border-color 0.2s ease;
 }
@@ -988,15 +1014,14 @@ onUnmounted(() => {
   background: #ef5050;
   color: white;
   border: none;
-  border-radius: 5px;
-  padding: 5px 10px;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.88rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30%;
   transition: background 0.2s ease;
 }
 
@@ -1020,11 +1045,11 @@ onUnmounted(() => {
 
 /* ── Whitelisted Email List ────────────────────────────── */
 .whitelisted-heading {
-  font-size: 0.6rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   color: #64748b;
   letter-spacing: 0.05em;
-  font-weight: 500;
+  font-weight: 600;
   border-bottom: 1px solid #e2e8f0;
   padding-bottom: 0.5rem;
   margin-top: 0.5rem;
@@ -1034,7 +1059,7 @@ onUnmounted(() => {
   max-height: 250px;
   overflow-y: auto;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #f8fafc;
 }
 
@@ -1055,7 +1080,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid #e2e8f0;
   transition: background 0.15s ease;
 }
@@ -1076,17 +1101,17 @@ onUnmounted(() => {
 
 .email-text {
   color: #334155;
-  font-size: 0.7rem;
+  font-size: 0.88rem;
 }
 
 .badge-admin {
   background: rgba(239, 80, 80, 0.1);
   color: #ef5050;
-  font-size: 0.6rem;
-  font-weight: 300;
+  font-size: 0.7rem;
+  font-weight: 600;
   padding: 2px 8px;
   border: 1px solid rgba(239, 80, 80, 0.2);
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .delete-btn {
@@ -1094,13 +1119,12 @@ onUnmounted(() => {
   border: none;
   color: #64748b;
   cursor: pointer;
-  padding: 5px;
+  padding: 4px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  width: 23px;
 }
 
 .delete-btn:hover:not(:disabled) {
