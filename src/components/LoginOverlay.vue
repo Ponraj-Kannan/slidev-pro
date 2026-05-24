@@ -18,15 +18,20 @@ const successMessage = ref('')
 const newEmail = ref('')
 const isLoading = ref(false)
 const isPageLoading = ref(true)
+const searchQuery = ref('')
 
 // Real-time email parser for auto-separation
 const parsedEmailsPreview = computed(() => {
   if (!newEmail.value) return []
-  // Matches any email-like strings globally
   const emailRegexGlobal = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
   const matches = newEmail.value.match(emailRegexGlobal) || []
-  // Deduplicate and trim
   return [...new Set(matches.map(e => e.trim().toLowerCase()))]
+})
+
+const filteredEmails = computed(() => {
+  if (!searchQuery.value.trim()) return authState.allowedEmails
+  const q = searchQuery.value.trim().toLowerCase()
+  return authState.allowedEmails.filter(e => e.toLowerCase().includes(q))
 })
 
 const isNotAllowed = ref(false)
@@ -85,7 +90,6 @@ async function fetchWhitelistedEmails() {
     }
   } catch (error) {
     console.warn('Could not fetch allowed emails from server. Falling back to local cache/default.', error)
-    // Fallback: load from localStorage or seed
     const local = localStorage.getItem('fp_allowed_emails')
     if (local) {
       authState.allowedEmails = JSON.parse(local)
@@ -108,7 +112,6 @@ async function checkAuthSession() {
   const savedPicture = localStorage.getItem('fp_auth_picture')
 
   if (savedToken && savedEmail) {
-    // Check if the saved email is still allowed
     const isAllowed = authState.allowedEmails.map(e => e.toLowerCase()).includes(savedEmail.toLowerCase())
     if (isAllowed) {
       authState.isLoggedIn = true
@@ -118,7 +121,6 @@ async function checkAuthSession() {
       authState.idToken = savedToken
       authState.isAdmin = savedEmail.toLowerCase() === 'ponrajacc@gmail.com'
     } else {
-      // Whitelist changed, no longer allowed
       logout()
       errorMessage.value = `Session expired: Email '${savedEmail}' is no longer whitelisted.`
     }
@@ -130,7 +132,6 @@ async function checkAuthSession() {
 function initGoogleSignIn() {
   if (authState.isLoggedIn) return
 
-  // Render Google Button in Next Tick to ensure div is present
   nextTick(() => {
     try {
       if (typeof window.google === 'undefined') {
@@ -147,11 +148,12 @@ function initGoogleSignIn() {
       const btnEl = document.getElementById('google-signin-btn')
       if (btnEl) {
         window.google.accounts.id.renderButton(btnEl, {
-          theme: 'filled_blue',
+          theme: 'filled_black',
           size: 'large',
           width: '280',
           text: 'signin_with',
-          shape: 'pill'
+          shape: 'pill',
+          border: 'none',
         })
       }
     } catch (err) {
@@ -189,13 +191,11 @@ async function handleGoogleSignInCallback(response) {
     return
   }
 
-  // Reload the emails list right before validation to ensure fresh whitelist data
   await fetchWhitelistedEmails()
 
   const isAllowed = authState.allowedEmails.map(e => e.toLowerCase()).includes(email)
 
   if (isAllowed) {
-    // Authenticated and whitelisted
     authState.isLoggedIn = true
     authState.userEmail = email
     authState.userName = payload.name || ''
@@ -203,13 +203,11 @@ async function handleGoogleSignInCallback(response) {
     authState.idToken = response.credential
     authState.isAdmin = email === 'ponrajacc@gmail.com'
 
-    // Persist session
     localStorage.setItem('fp_auth_token', response.credential)
     localStorage.setItem('fp_auth_email', email)
     localStorage.setItem('fp_auth_name', payload.name || '')
     localStorage.setItem('fp_auth_picture', payload.picture || '')
   } else {
-    // Authenticated but NOT whitelisted
     isNotAllowed.value = true
     notAllowedEmail.value = email
   }
@@ -239,14 +237,18 @@ async function addEmail() {
     if (response.ok) {
       authState.allowedEmails = data.emails || []
       localStorage.setItem('fp_allowed_emails', JSON.stringify(authState.allowedEmails))
-      successMessage.value = data.message || `Successfully whitelisted ${emailsToWhitelist.length} email(s)`
+      successMessage.value = `Successfully added`
       newEmail.value = ''
+
+      setTimeout(() => {
+        successMessage.value = ''
+      },1000)
     } else {
-      throw new Error(data.error || 'Failed to add emails to whitelist')
+      throw new Error(data.error || 'Failed to add emails')
     }
   } catch (error) {
-    console.error('Failed to add emails to whitelist:', error)
-    errorMessage.value = error.message || 'Failed to add emails to whitelist'
+    console.error('Failed to add emails: ', error)
+    errorMessage.value = error.message || 'Failed to add emails'
   } finally {
     isLoading.value = false
   }
@@ -259,9 +261,9 @@ async function removeEmail(emailToRemove) {
     return
   }
 
-  if (!confirm(`Are you sure you want to remove '${emailToRemove}' from the whitelist?`)) {
-    return
-  }
+  // if (!confirm(`Are you sure you want to remove '${emailToRemove}' from the whitelist?`)) {
+  //   return
+  // }
 
   errorMessage.value = ''
   successMessage.value = ''
@@ -282,7 +284,11 @@ async function removeEmail(emailToRemove) {
     if (response.ok) {
       authState.allowedEmails = data.emails || []
       localStorage.setItem('fp_allowed_emails', JSON.stringify(authState.allowedEmails))
-      successMessage.value = data.message || `Removed successfully: ${emailToRemove}`
+      successMessage.value = `Removed successfully`
+
+      setTimeout(() => {
+        successMessage.value = ''
+      },1000)
     } else {
       throw new Error(data.error || 'Failed to remove email')
     }
@@ -314,7 +320,6 @@ onMounted(() => {
   window.addEventListener('keypress', blockKeyboard, { capture: true })
 
   checkAuthSession().then(() => {
-    // Dynamic Google Client Script Load if not loaded yet
     if (typeof window.google === 'undefined') {
       const script = document.createElement('script')
       script.src = 'https://accounts.google.com/gsi/client'
@@ -343,21 +348,16 @@ onUnmounted(() => {
     <!-- 1. FULL-SCREEN LOGIN OVERLAY (shown if not logged in) -->
     <Transition name="fade">
       <div v-if="!authState.isLoggedIn && !isPageLoading" class="login-overlay">
-        <!-- Visual background glowing elements -->
-        <div class="blob blob-orange"></div>
-        <div class="blob blob-purple"></div>
-        
         <div class="login-card">
           <!-- Brand header -->
           <div class="brand-container">
             <div class="brand-logo">
-              <span class="logo-f">F</span>
+              <img src="../assets/logo.png" style="width: 150px;"/>
             </div>
-            <h1 class="brand-title">FACEPrep</h1>
             <p class="brand-tagline">{{ isAdminPage ? 'Admin Whitelist Portal' : 'Interactive Slide Deck Portal' }}</p>
           </div>
 
-          <div class="divider"></div>
+          <!-- <div class="divider"></div> -->
 
           <!-- Card Body -->
           <div class="login-body">
@@ -369,13 +369,13 @@ onUnmounted(() => {
                   <line x1="9" y1="9" x2="15" y2="15"/>
                 </svg>
               </div>
+              
               <h2 class="login-heading text-red">Not allowed</h2>
               <p class="login-subtext text-center">
-                This email is not whitelisted to access the presentation.
+                This email is not whitelisted to access.
               </p>
-              
               <div class="not-allowed-actions">
-                <button @click="resetLogin" class="action-btn-retry width-full">Try Another Account</button>
+                <center><button @click="resetLogin" class="action-btn-retry">Back</button></center>
               </div>
             </template>
 
@@ -405,10 +405,6 @@ onUnmounted(() => {
               </Transition>
             </template>
           </div>
-
-          <div class="login-footer">
-            <span>Whitelisted logins only.</span>
-          </div>
         </div>
       </div>
     </Transition>
@@ -419,7 +415,7 @@ onUnmounted(() => {
       <p class="loader-text">Loading deck authorization...</p>
     </div>
 
-    <!-- 2. ADMIN DASHBOARD MODAL/PAGE (shown to admin on toggle or direct route) -->
+    <!-- 2. ADMIN DASHBOARD MODAL/PAGE -->
     <Transition name="fade">
       <div v-if="authState.isLoggedIn && authState.isAdmin && (authState.showAdminPanel || isAdminPage)" class="admin-modal-overlay" @click.self="closeAdminPanel">
         <div class="admin-card">
@@ -430,7 +426,7 @@ onUnmounted(() => {
                 <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
                 <circle cx="12" cy="12" r="3"/>
               </svg>
-              <h2>Whitelist Email Management</h2>
+              <p>Manage Emails</p>
             </div>
             <button class="close-btn" @click="closeAdminPanel" :title="isAdminPage ? 'Back to Slides' : 'Close'">
               <svg v-if="isAdminPage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
@@ -446,7 +442,7 @@ onUnmounted(() => {
 
           <!-- Body -->
           <div class="admin-body">
-            <!-- Alert Banners inside Modal -->
+            <!-- Alert Banners -->
             <div v-if="errorMessage" class="error-banner mb-3">
               <span>{{ errorMessage }}</span>
             </div>
@@ -462,7 +458,7 @@ onUnmounted(() => {
             <form @submit.prevent="addEmail" class="add-form">
               <textarea 
                 v-model="newEmail" 
-                placeholder="Paste text containing email addresses (e.g. copied from Excel, a document, or email list)" 
+                placeholder="Add Email Address" 
                 required 
                 class="form-input form-textarea"
                 rows="3"
@@ -470,32 +466,51 @@ onUnmounted(() => {
               ></textarea>
 
               <!-- Live Auto-Separated Emails Preview -->
-              <div v-if="parsedEmailsPreview.length > 0" class="parsed-preview-box">
+              <!-- <div v-if="parsedEmailsPreview.length > 0" class="parsed-preview-box">
                 <span class="preview-title">Detected {{ parsedEmailsPreview.length }} email(s):</span>
                 <div class="preview-tags">
                   <span v-for="email in parsedEmailsPreview" :key="email" class="preview-tag">
                     {{ email }}
                   </span>
                 </div>
-              </div>
+              </div> -->
 
               <button type="submit" class="submit-btn" :disabled="isLoading || parsedEmailsPreview.length === 0">
                 <span v-if="isLoading" class="btn-spinner"></span>
-                <span v-else>Whitelist {{ parsedEmailsPreview.length }} Email(s)</span>
+                <span v-else>Add {{ parsedEmailsPreview.length == 0 ? "" : parsedEmailsPreview.length }} Email{{ parsedEmailsPreview.length == 1 ? "" : "(s)" }}</span>
               </button>
             </form>
 
+            <!-- Whitelisted Heading with Search -->
             <div class="whitelisted-heading">
-              <span>Whitelisted Accounts ({{ authState.allowedEmails.length }})</span>
+              <span>Registered Emails ({{ authState.allowedEmails.length }})</span>
+              <div class="search-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search"
+                  class="search-input"
+                />
+                <button v-if="searchQuery" class="search-clear-btn" @click="searchQuery = ''" title="Clear search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            <!-- Whitelist Table / List -->
+            <!-- Whitelist List -->
             <div class="emails-list-container">
-              <div v-if="authState.allowedEmails.length === 0" class="no-emails">
-                No whitelisted emails found.
+              <div v-if="filteredEmails.length === 0" class="no-emails">
+                {{ searchQuery ? `No emails match "${searchQuery}"` : 'No emails found.' }}
               </div>
               <ul v-else class="emails-list">
-                <li v-for="email in authState.allowedEmails" :key="email" class="email-item">
+                <li v-for="email in filteredEmails" :key="email" class="email-item">
                   <div class="email-details">
                     <span class="email-text">{{ email }}</span>
                     <span v-if="email === 'ponrajacc@gmail.com'" class="badge-admin">Primary Admin</span>
@@ -522,18 +537,17 @@ onUnmounted(() => {
       </div>
     </Transition>
 
-    <!-- 3. ADMIN ACCESS DENIED (shown if logged in but not admin on admin page) -->
+    <!-- 3. ADMIN ACCESS DENIED -->
     <Transition name="fade">
       <div v-if="isAdminPage && authState.isLoggedIn && !authState.isAdmin" class="login-overlay">
         <div class="login-card">
           <div class="brand-container">
             <div class="brand-logo">
-              <span class="logo-f">F</span>
+              <img src="../assets/logo.png" style="width: 150px;"/>
             </div>
-            <h1 class="brand-title">FACEPrep</h1>
             <p class="brand-tagline">Admin Portal</p>
           </div>
-          <div class="divider"></div>
+          <!-- <div class="divider"></div> -->
           <div class="login-body">
             <div class="not-allowed-icon-container text-red">
               <svg class="not-allowed-large-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -555,37 +569,25 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* ── Simplified Access Denied & Admin Portal Styles ────── */
-.text-red {
-  color: #ef4444 !important;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.width-full {
-  width: 100% !important;
-}
+.text-red { color: #ef4444 !important; }
+.text-center { text-align: center; }
+.width-full { width: 100% !important; }
 
 .not-allowed-icon-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 10px;
   color: #ef4444;
+  margin-top: -10px;
 }
-
-.not-allowed-large-icon {
-  width: 56px;
-  height: 56px;
-}
+.not-allowed-large-icon { width: 40px; height: 40px;}
 
 .not-allowed-actions {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   margin-top: 1.5rem;
-  width: 100%;
+  margin-top: -10px;
 }
 
 .action-btn-admin {
@@ -603,57 +605,50 @@ onUnmounted(() => {
   cursor: pointer;
   box-sizing: border-box;
 }
-
-.action-btn-admin:hover {
-  background: #db3b3b;
-}
+.action-btn-admin:hover { background: #db3b3b; }
 
 .action-btn-retry {
   background: #ffffff;
-  color: #475569 !important;
-  border: 1px solid #cbd5e1;
-  font-weight: 600;
+  color: #ffffffd3 !important;
+  font-weight: 500;
   font-size: 0.88rem;
-  padding: 0.75rem 1.25rem;
+  padding: 5px;
   border-radius: 8px;
   text-align: center;
   transition: all 0.2s ease;
   cursor: pointer;
   box-sizing: border-box;
-}
 
+  /* From https://css.glass */
+background-color: #2a2a2b;
+border-radius: 10px;
+box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+backdrop-filter: blur(6.2px);
+-webkit-backdrop-filter: blur(6.2px);
+width:100px;
+}
 .action-btn-retry:hover {
-  background: #f1f5f9;
-  color: #0f172a !important;
-  border-color: #94a3b8;
+  background-color: #2a2a2b;
 }
 
-.admin-link {
-  color: #ef5050 !important;
-  text-decoration: underline;
-  font-weight: 600;
-  display: inline-block;
-  margin-top: 0.25rem;
-  transition: color 0.2s ease;
-}
-
-.admin-link:hover {
-  color: #f87171 !important;
-}
-
-/* ── Layout & Background ────────────────────────────────── */
+/* Layout & Background */
 .login-overlay {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
-  background: #f8fafc;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999999;
+  z-index: 10;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: repeat;
+  background-image: url("../assets/bg_1.jpg");
 }
 
 .page-loader-overlay {
@@ -666,7 +661,7 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 999998;
+  z-index: 10;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -679,47 +674,16 @@ onUnmounted(() => {
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
 }
+.loader-text { color: #64748b; font-size: 0.95rem; }
 
-.loader-text {
-  color: #64748b;
-  font-size: 0.95rem;
-}
-
-/* Glowing blur blobs */
-.blob {
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  border-radius: 50%;
-  filter: blur(100px);
-  animation: float 20s ease-in-out infinite;
-}
-
-.blob-orange {
-  background: #ef5050;
-  opacity: 0.08;
-  top: -10%;
-  left: 10%;
-  animation-delay: 0s;
-}
-
-.blob-purple {
-  background: #fda4af;
-  opacity: 0.1;
-  bottom: -10%;
-  right: 10%;
-  animation-delay: -5s;
-}
-
-/* ── Login Card ────────────────────────────────────────── */
+/* Login Card */
 .login-card {
   width: 100%;
   max-width: 440px;
-  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 20px;
+  border-radius: 10px;
   box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
   padding: 2.5rem;
   display: flex;
@@ -728,6 +692,15 @@ onUnmounted(() => {
   position: relative;
   z-index: 10;
   box-sizing: border-box;
+  backdrop-filter: blur(2.4px);
+  height: 300px;
+
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(0.8px);
+  -webkit-backdrop-filter: blur(0.8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .brand-container {
@@ -736,44 +709,16 @@ onUnmounted(() => {
   align-items: center;
   text-align: center;
 }
-
 .brand-logo {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, #ef5050, #f87171);
-  border-radius: 12px;
+  width: 80%;
+  height: 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(239, 80, 80, 0.2);
   margin-bottom: 0.75rem;
 }
-
-.logo-f {
-  color: white;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 900;
-  font-size: 1.5rem;
-}
-
-.brand-title {
-  color: #1e293b;
-  font-family: 'Outfit', sans-serif;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 0;
-  background: linear-gradient(135deg, #1e293b, #475569);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.brand-tagline {
-  color: #64748b;
-  font-size: 0.85rem;
-  margin: 0.25rem 0 0 0;
-}
+.brand-tagline { color: #383838; font-size: 0.85rem; margin: 0.25rem 0 0 0; }
 
 .divider {
   height: 1px;
@@ -782,12 +727,11 @@ onUnmounted(() => {
 
 .login-heading {
   color: #1e293b;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
   text-align: center;
   margin: 0 0 0.5rem 0;
 }
-
 .login-subtext {
   color: #475569;
   font-size: 0.88rem;
@@ -795,14 +739,13 @@ onUnmounted(() => {
   text-align: center;
   margin: 0 0 1.5rem 0;
 }
-
 .signin-button-wrapper {
   display: flex;
   justify-content: center;
   margin-bottom: 1.5rem;
 }
 
-/* ── Error Banner ──────────────────────────────────────── */
+/* Error Banner */
 .error-banner {
   background: rgba(239, 68, 68, 0.05);
   border: 1px solid rgba(239, 68, 68, 0.15);
@@ -813,84 +756,54 @@ onUnmounted(() => {
   align-items: flex-start;
   margin-top: 1rem;
 }
+.error-icon { width: 18px; height: 18px; color: #ef4444; flex-shrink: 0; margin-top: 2px; }
+.error-text { color: #ef4444; font-size: 0.82rem; line-height: 1.4; text-align: left; }
 
-.error-icon {
-  width: 18px;
-  height: 18px;
-  color: #ef4444;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.error-text {
-  color: #ef4444;
-  font-size: 0.82rem;
-  line-height: 1.4;
-  text-align: left;
-}
-
-.login-footer {
-  text-align: center;
-  font-size: 0.75rem;
-  color: #64748b;
-  line-height: 1.4;
-}
-
-/* ── Admin Modal Overlay ────────────────────────────────── */
+/* Admin Modal */
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   background: rgba(241, 245, 249, 0.8);
-  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000000;
+  z-index: 10;
   font-family: 'Inter', system-ui, sans-serif;
   box-sizing: border-box;
 }
 
 .admin-card {
   width: 100%;
-  max-width: 580px;
+  max-width: 500px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  border-radius: 8px;
   box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.1);
   display: flex;
   flex-direction: column;
-  max-height: 85vh;
+  min-height: 10vh;
   box-sizing: border-box;
+  margin-top: -200px;
 }
 
 .admin-header {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1rem;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 44px;
 }
-
-.admin-header-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.admin-header-title { display: flex; align-items: center; gap: 0.5rem; }
+.admin-header-title p { 
+  color: #2c3543; 
+  font-size: .8rem; 
+  font-weight: 400; 
+  margin: 0; 
 }
-
-.admin-header-title h2 {
-  color: #1e293b;
-  font-size: 1.15rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.admin-icon {
-  width: 20px;
-  height: 20px;
-  color: #ef5050;
-}
+.admin-icon { width: 15px; height: 15px; color: #2c3543; }
 
 .close-btn {
   background: none;
@@ -904,90 +817,53 @@ onUnmounted(() => {
   justify-content: center;
   transition: all 0.2s ease;
 }
-
-.close-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+.close-btn:hover { 
+  background: #ef50503a; 
+  color: #ef5050; 
 }
-
-.close-btn svg {
-  width: 20px;
-  height: 20px;
-}
+.close-btn svg { width: 15px; height: 15px; }
 
 .admin-body {
-  padding: 1.5rem;
+  padding: 10px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
 }
 
 .success-banner {
   background: rgba(34, 197, 94, 0.05);
   border: 1px solid rgba(34, 197, 94, 0.15);
   border-radius: 8px;
-  padding: 0.75rem 1rem;
+  padding: 5px 10px;
   display: flex;
   gap: 0.75rem;
   align-items: center;
   color: #166534;
-  font-size: 0.85rem;
-}
+  font-size: 0.65rem;
+  z-index: 20;
 
-.success-icon {
-  width: 18px;
-  height: 18px;
-  color: #22c55e;
-  flex-shrink: 0;
 }
+.success-icon { width: 13px; height: 13px; color: #22c55e; flex-shrink: 0; }
+.mb-3 { margin-bottom: 0.75rem; }
 
-.mb-3 {
-  margin-bottom: 0.75rem;
-}
-
-/* ── Add Email Form ────────────────────────────────────── */
-.add-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.form-textarea {
-  min-height: 70px;
-  resize: vertical;
-  font-family: inherit;
-  line-height: 1.4;
-}
+/* Add Email Form */
+.add-form { display: flex; flex-direction: column; gap: .5rem; }
+.form-textarea { min-height: 30px; resize: vertical; font-family: inherit; line-height: 1.4; }
 
 .parsed-preview-box {
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
-  padding: 0.75rem;
-  max-height: 120px;
+  padding: 5px;
+  max-height: 50px;
   overflow-y: auto;
 }
-
-.preview-title {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 0.5rem;
-  text-align: left;
-}
-
-.preview-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-}
-
+.preview-title { display: block; font-size: 0.6rem; font-weight: 500; color: #475569; margin-bottom: 0.2rem; text-align: left; }
+.preview-tags { display: flex; flex-wrap: wrap; gap: 0.375rem; }
 .preview-tag {
   background: #e2e8f0;
   color: #334155;
-  font-size: 0.72rem;
+  font-size: 0.6rem;
   padding: 0.15rem 0.5rem;
   border-radius: 4px;
   border: 1px solid #cbd5e1;
@@ -996,43 +872,36 @@ onUnmounted(() => {
 
 .form-input {
   flex: 1;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+  background: #b6b6b620;
+  border: 1px solid #383838a1;
+  border-radius: 4px;
+  padding: 8px;
   color: #1e293b;
-  font-size: 0.88rem;
+  font-size: 0.7rem;
   outline: none;
   transition: border-color 0.2s ease;
-}
 
-.form-input:focus {
-  border-color: #ef5050;
+  max-height: 50px;
 }
+.form-input:focus { border-color: #ef5050; }
 
 .submit-btn {
   background: #ef5050;
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1.25rem;
+  border-radius: 5px;
+  padding: 4px 6px;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.6rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 20%;
   transition: background 0.2s ease;
 }
-
-.submit-btn:hover:not(:disabled) {
-  background: #db3b3b;
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.submit-btn:hover:not(:disabled) { background: #db3b3b; }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-spinner {
   width: 16px;
@@ -1043,75 +912,94 @@ onUnmounted(() => {
   animation: spin 0.8s linear infinite;
 }
 
-/* ── Whitelisted Email List ────────────────────────────── */
+/* Whitelisted heading with search */
 .whitelisted-heading {
-  font-size: 0.8rem;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6rem;
   color: #64748b;
   letter-spacing: 0.05em;
-  font-weight: 600;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 0.5rem;
-  margin-top: 0.5rem;
+  font-weight: 500;
+  margin: 5px 0px;
 }
 
+.search-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: #f8fafc;
+  /* background-color: palevioletred; */
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  padding: 3px 8px;
+  gap: 4px;
+  transition: border-color 0.2s ease;
+  width: 200px;
+}
+.search-wrapper:focus-within { border-color: #ef5050; background: #fff; font-size: .5rem;}
+
+.search-icon { width: 11px; height: 11px; color: #94a3b8; flex-shrink: 0; }
+
+.search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.6rem;
+  color: #2a2a2b;
+  width: 150px;
+  padding: 1px 0;
+  font-family: inherit;
+}
+.search-input::placeholder { color: #94a3b8; }
+
+.search-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+.search-clear-btn:hover { color: #ef4444; }
+.search-clear-btn svg { width: 10px; height: 10px; }
+
+/* Email List */
 .emails-list-container {
-  max-height: 250px;
+  max-height: 100px;
   overflow-y: auto;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 4px;
   background: #f8fafc;
 }
-
-.no-emails {
-  padding: 2rem;
-  text-align: center;
-  color: #64748b;
-  font-size: 0.88rem;
-}
-
-.emails-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
+.no-emails { padding: 2rem; text-align: center; color: #64748b; font-size: 0.7rem; }
+.emails-list { list-style: none; padding: 0; margin: 0; }
 
 .email-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
+  padding: 5px;
   border-bottom: 1px solid #e2e8f0;
   transition: background 0.15s ease;
 }
+.email-item:last-child { border-bottom: none; }
+.email-item:hover { background: #f1f5f9; }
 
-.email-item:last-child {
-  border-bottom: none;
-}
-
-.email-item:hover {
-  background: #f1f5f9;
-}
-
-.email-details {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.email-text {
-  color: #334155;
-  font-size: 0.88rem;
-}
+.email-details { display: flex; align-items: center; gap: 0.75rem; }
+.email-text { color: #334155; font-size: 0.7rem; }
 
 .badge-admin {
   background: rgba(239, 80, 80, 0.1);
   color: #ef5050;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.6rem;
+  font-weight: 300;
   padding: 2px 8px;
   border: 1px solid rgba(239, 80, 80, 0.2);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .delete-btn {
@@ -1119,57 +1007,24 @@ onUnmounted(() => {
   border: none;
   color: #64748b;
   cursor: pointer;
-  padding: 4px;
+  padding: 5px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  width: 23px;
 }
+.delete-btn:hover:not(:disabled) { background: rgba(239, 68, 68, 0.05); color: #ef4444; }
+.delete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.trash-icon { width: 16px; height: 16px; }
 
-.delete-btn:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.05);
-  color: #ef4444;
-}
+/* Animations */
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.delete-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
-.trash-icon {
-  width: 16px;
-  height: 16px;
-}
-
-/* ── Animations ────────────────────────────────────────── */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes float {
-  0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
-  100% { transform: translateY(0px) rotate(360deg); }
-}
-
-/* Vue Transitions */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active {
-  transition: all 0.3s ease-out;
-}
-
-.slide-up-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
+.slide-up-enter-active { transition: all 0.3s ease-out; }
+.slide-up-enter-from { opacity: 0; transform: translateY(10px); }
 </style>
