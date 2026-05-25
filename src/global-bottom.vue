@@ -9,6 +9,18 @@ const { $frontmatter } = useSlideContext()
 
 const sessionLabel = computed(() => $frontmatter.value?.sessionLabel || 'Session')
 const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontmatter.value?.title || 'Untitled Deck')
+
+async function handleLogout() {
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      await (document.exitFullscreen?.() || document.webkitExitFullscreen?.())
+    }
+  } catch (e) {
+    // ignore fullscreen errors
+  } finally {
+    logout()
+  }
+}
 </script>
 
 <template>
@@ -39,7 +51,7 @@ const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontma
           <div v-else class="fp-avatar-placeholder">
             {{ authState.userName ? authState.userName.charAt(0).toUpperCase() : authState.userEmail.charAt(0).toUpperCase() }}
           </div>
-          <button @click="logout" class="fp-logout-btn" title="Sign Out">
+          <button @click="handleLogout" class="fp-logout-btn" title="Sign Out">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fp-logout-icon">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
               <polyline points="16 17 21 12 16 7"/>
@@ -111,8 +123,8 @@ const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontma
 
 .fp-admin-btn:hover,
 .fp-admin-btn--active {
-  color: #ff5900;
-  background: rgba(255, 89, 0, 0.1);
+  color: #ef5050;
+  background: #ef505046;
 }
 
 .fp-icon {
@@ -163,8 +175,7 @@ const sessionTitle = computed(() => $frontmatter.value?.sessionTitle || $frontma
 }
 
 .fp-logout-btn:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: #ef5050;
 }
 
 .fp-logout-icon {
