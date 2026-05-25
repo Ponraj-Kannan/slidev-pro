@@ -13,6 +13,17 @@ watchEffect(() => {
   }
 })
 
+// Fullscreen helpers
+function enterFullscreen() {
+  const el = document.documentElement
+  if (el.requestFullscreen) el.requestFullscreen()
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
+  else if (el.mozRequestFullScreen) el.mozRequestFullScreen()
+  else if (el.msRequestFullscreen) el.msRequestFullscreen()
+}
+
+const showFullscreenPrompt = ref(false)
+
 const errorMessage = ref('')
 const successMessage = ref('')
 const newEmail = ref('')
@@ -207,6 +218,7 @@ async function handleGoogleSignInCallback(response) {
     localStorage.setItem('fp_auth_email', email)
     localStorage.setItem('fp_auth_name', payload.name || '')
     localStorage.setItem('fp_auth_picture', payload.picture || '')
+    showFullscreenPrompt.value = true
   } else {
     isNotAllowed.value = true
     notAllowedEmail.value = email
@@ -345,6 +357,22 @@ onUnmounted(() => {
 
 <template>
   <div>
+    <!-- FULLSCREEN PROMPT (shown once after login, requires direct click for browser gesture) -->
+    <Transition name="fade">
+      <div v-if="showFullscreenPrompt" class="fs-prompt-overlay">
+        <div class="fs-prompt-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fs-prompt-icon">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+          <p class="fs-prompt-text">Click to enter fullscreen for the best experience</p>
+          <button class="fs-prompt-btn" @click="enterFullscreen(); showFullscreenPrompt = false">
+            Enter Fullscreen
+          </button>
+          <button class="fs-prompt-skip" @click="showFullscreenPrompt = false">Skip</button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- 1. FULL-SCREEN LOGIN OVERLAY (shown if not logged in) -->
     <Transition name="fade">
       <div v-if="!authState.isLoggedIn && !isPageLoading" class="login-overlay">
@@ -375,7 +403,7 @@ onUnmounted(() => {
                 This email is not whitelisted to access.
               </p>
               <div class="not-allowed-actions">
-                <center><button @click="resetLogin" class="action-btn-retry">Back</button></center>
+                <center><button @click="resetLogin" class="action-btn-retry">Go Back</button></center>
               </div>
             </template>
 
@@ -609,27 +637,87 @@ onUnmounted(() => {
 
 .action-btn-retry {
   background: #ffffff;
-  color: #ffffffd3 !important;
+  /* color: #ffffffd3 !important; */
   font-weight: 500;
   font-size: 0.88rem;
   padding: 5px;
-  border-radius: 8px;
+  border-radius: 4px;
   text-align: center;
   transition: all 0.2s ease;
   cursor: pointer;
   box-sizing: border-box;
+  color: #475569;
 
   /* From https://css.glass */
-background-color: #2a2a2b;
-border-radius: 10px;
-box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+/* background-color: #2a2a2b; */
+/* box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 backdrop-filter: blur(6.2px);
--webkit-backdrop-filter: blur(6.2px);
+-webkit-backdrop-filter: blur(6.2px); */
 width:100px;
 }
 .action-btn-retry:hover {
-  background-color: #2a2a2b;
+  /* background-color: #2a2a2b; */
 }
+
+/* Fullscreen Prompt */
+.fs-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(241, 245, 249, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  font-family: 'Inter', system-ui, sans-serif;
+  box-sizing: border-box;
+}
+.fs-prompt-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: 340px;
+  text-align: center;
+}
+.fs-prompt-icon {
+  width: 40px;
+  height: 40px;
+  color: #ef5050;
+}
+.fs-prompt-text {
+  color: #2b2b2b;
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+.fs-prompt-btn {
+  background: #ef5050;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 28px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+}
+.fs-prompt-btn:hover { background: #db3b3b; }
+.fs-prompt-skip {
+  background: none;
+  border: none;
+  color: #414852;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+}
+.fs-prompt-skip:hover { color: #94a3b8; }
 
 /* Layout & Background */
 .login-overlay {
@@ -638,17 +726,19 @@ width:100px;
   width: 100vw;
   height: 100vh;
   display: flex;
-  justify-content: center;
+  justify-content: right;
   align-items: center;
   z-index: 10;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow: hidden;
   width: 100%;
   height: 100%;
-  background-size: cover;
   background-position: center center;
-  background-repeat: repeat;
-  background-image: url("../assets/bg_1.jpg");
+  background-image: url("../assets/Header_Student_placement.webp");
+  background-size: 500px;
+  background-repeat: no-repeat;
+  background-position-x: 10%;
+  padding: 50px;
 }
 
 .page-loader-overlay {
@@ -695,7 +785,7 @@ width:100px;
   backdrop-filter: blur(2.4px);
   height: 300px;
 
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.842);
   border-radius: 16px;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(0.8px);

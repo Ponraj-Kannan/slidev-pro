@@ -80,23 +80,28 @@ defineProps({
 
 <style scoped>
 /* ── Layout ────────────────────────────────────────────── */
+
 .slide-wrapper {
   margin-top: -10px;
   margin-left: -30px;
   width: 107%;
-  height: 68vh;
+  height: 65vh;
   font-size: 0.8rem;
   font-weight: 400;
   overflow-x: auto;
   overflow-y: auto;
   scrollbar-width: none;
+
+  /* background-color: #9B8EC7; */
 }
 
 .slide-body {
   display: flex;
   flex-direction: column;
   border-radius: 4px;
-  min-height: 93%;
+
+  /* background-color: cornflowerblue; */
+  margin-top: 36px;
 }
 
 /* ── Navbar ────────────────────────────────────────────── */
@@ -108,6 +113,9 @@ defineProps({
   gap: 0.75rem;
   padding: 0 10px;
   color: #ffffff;
+  position: fixed;
+  width: 94.7%;
+  /* background-color: #9F8383; */
 }
 
 .navbar > img {
@@ -129,7 +137,7 @@ defineProps({
 /* ── Content Rows ──────────────────────────────────────── */
 .row-top {
   width: 100%;
-  height: 7.7vh;
+  height: 6vh;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -137,15 +145,17 @@ defineProps({
 
 .row-main {
   width: 100%;
-  min-height: 55vh;
+  height: 50vh;
   display: flex;
   flex-direction: row;
+  /* background-color: #2FA084; */
 }
 
 /* ── Columns ───────────────────────────────────────────── */
 .col-editor {
   width: 65%;
-  height: 54vh;
+  height: 50vh;
+  /* background-color: palevioletred; */
 }
 
 .col-sidebar {
@@ -161,8 +171,8 @@ defineProps({
   display: inline-block;
   min-width: 32px;
   padding:5px 10px;
-  background-color: #ff914d4e;
-  border: 1px solid #ff914dd3;
+  background-color: #ef50505a;
+  border: 1px solid #ef5050;
 }
 
 .info-card {

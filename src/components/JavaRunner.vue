@@ -3,62 +3,7 @@ import { ref, computed, watch } from 'vue'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 // ── Built-in code library (avoids template literal issues in .md files) ─────
-const CODE_LIBRARY = {
-  helloWorld: [
-    'public class Main {',
-    '    public static void main(String[] args) {',
-    '        System.out.println("Hello, World!");',
-    '        System.out.println("This runs inside the slide!");',
-    '    }',
-    '}'
-  ].join('\n'),
-
-  pythonBasics: [
-    'x = 10',
-    'y = 20',
-    'result = x + y',
-    'print("Sum =", result)',
-    '',
-    'nums = [1, 2, 3, 4, 5]',
-    'total = 0',
-    'for n in nums:',
-    '    total += n',
-    'print("Total:", total)'
-  ].join('\n'),
-
-  dataTypes: [
-    'public class Main {',
-    '    public static void main(String[] args) {',
-    '        int age = 20;',
-    '        double gpa = 8.75;',
-    "        char grade = 'A';",
-    '        boolean isStudent = true;',
-    '        String name = "FACEPrep";',
-    '',
-    '        System.out.println("Name: " + name);',
-    '        System.out.println("Age: " + age);',
-    '        System.out.println("GPA: " + gpa);',
-    '        System.out.println("Grade: " + grade);',
-    '        System.out.println("Is Student: " + isStudent);',
-    '    }',
-    '}'
-  ].join('\n'),
-
-  variables: [
-    'public class Main {',
-    '    public static void main(String[] args) {',
-    '        int age = 21;',
-    '        double salary = 45000.50;',
-    '        String name = "Alice";',
-    '        boolean hired = true;',
-    '',
-    '        System.out.println(name + " is " + age + " years old");',
-    '        System.out.println("Salary: " + salary);',
-    '        System.out.println("Hired: " + hired);',
-    '    }',
-    '}'
-  ].join('\n')
-}
+const CODE_LIBRARY = {}
 
 const props = defineProps({
   /** The language to use in OneCompiler. Supported: java, python, cpp */
@@ -140,6 +85,8 @@ const langLabel = computed(() => {
 // ── OneCompiler iframe URL ────────────────────────────────────────────────────
 // OneCompiler supports an iframe embed with a `?theme=` and `?hideNewFileOption=` param.
 // Code can be pre-filled via the `?code=` query param (URL-encoded).
+const STORAGE_KEY = `oc-code-${props.language}-${props.codeKey || 'default'}`
+
 const oneCompilerUrl = computed(() => {
   const base = `https://onecompiler.com/embed/${ocLang.value}`
   const params = new URLSearchParams({
@@ -149,10 +96,15 @@ const oneCompilerUrl = computed(() => {
     hideTitle: 'true',
     listenToEvents: 'true',
     codeChangeEvent: 'true',
+    fontSize: '16',
   })
-  if (resolvedCode.value) {
-    params.set('code', resolvedCode.value)
-  }
+
+  // Priority: saved code → prop starter code → nothing (OC shows its own boilerplate)
+  const saved = localStorage.getItem(STORAGE_KEY)
+  const savedCode = saved ? JSON.parse(saved).code : null
+  const initialCode = savedCode || resolvedCode.value
+
+  if (initialCode) params.set('code', initialCode)
   return `${base}?${params.toString()}`
 })
 
@@ -161,6 +113,14 @@ const showVisualizer = ref(false)
 const visualizerCode = ref(resolvedCode.value)
 const visualizerStdin = ref('')
 const ocFrameRef = ref(null)
+
+// DELETE this — it doesn't work cross-origin
+const onIframeLoad = () => {
+  ocFrameRef.value?.contentWindow?.postMessage(
+    { type: 'settings', fontSize: 20 },
+    'https://onecompiler.com'
+  )
+}
 
 // Listen for postMessage from OneCompiler iframe so we can grab the latest code and stdin
 if (typeof window !== 'undefined') {
@@ -203,7 +163,14 @@ const visualizerUrl = computed(() => {
   return `https://pythontutor.com/iframe-embed.html#code=${encodedCode}&cumulative=false&heapPrimitives=nevernest&mode=display&origin=opt-frontend.js&py=${ptLang.value}&rawInputLstJSON=${encodedInput}&textReferences=false`
 })
 
+const showVisualizerWarning = ref(false)
+
 const openVisualizer = () => {
+  const code = visualizerCode.value || resolvedCode.value || ''
+  if (!code.trim()) {
+    showVisualizerWarning.value = true
+    return
+  }
   showVisualizer.value = true
 }
 
@@ -213,9 +180,63 @@ const openCompiler = () => {
   showCompiler.value = true;
   showVisualizer.value = false
 }
+
+// Fullscreen compiler URL — uses live-typed code instead of starter code
+const fullscreenCompilerUrl = computed(() => {
+  const base = `https://onecompiler.com/embed/${ocLang.value}`
+  const params = new URLSearchParams({
+    theme: props.theme,
+    hideNewFileOption: 'false',
+    hideStdin: props.hideStdin ? 'true' : 'false',
+    hideTitle: 'true',
+    listenToEvents: 'true',
+    codeChangeEvent: 'true',
+    fontSize: '20',
+  })
+  // Use live code if user has typed something, else fall back to starter
+  const liveCode = visualizerCode.value || resolvedCode.value
+  if (liveCode) {
+    params.set('code', liveCode)
+  }
+  return `${base}?${params.toString()}`
+})
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('message', (event) => {
+    if (!event.data) return
+    if (event.data.source === 'vue-devtools-proxy') return
+    if (ocFrameRef.value && event.source !== ocFrameRef.value.contentWindow) return
+
+    if (event.data.language && typeof event.data.language === 'string') {
+      activeLang.value = event.data.language
+    }
+
+    // Extract code
+    if (event.data.files && Array.isArray(event.data.files) && event.data.files.length > 0 && event.data.files[0].content !== undefined) {
+      visualizerCode.value = event.data.files[0].content || visualizerCode.value
+    } else if (typeof event.data.code === 'string') {
+      visualizerCode.value = event.data.code || visualizerCode.value
+    } else if (typeof event.data.data === 'string' && event.data.type !== 'result') {
+      visualizerCode.value = event.data.data || visualizerCode.value
+    }
+
+    if (typeof event.data.stdin === 'string') {
+      visualizerStdin.value = event.data.stdin
+    }
+
+    // ── Save to localStorage only when Run is clicked ──────────────
+    if (event.data.type === 'result') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        code: visualizerCode.value,
+        lang: activeLang.value,
+        savedAt: new Date().toISOString()
+      }))
+    }
+  })
+}
 </script>
 
-<template>
+<template style="width:100%; height:100vh;">
   <div class="oc-slide">
     <!-- ── Header bar ─────────────────────────────────────────────────── -->
     <div class="oc-header">
@@ -231,10 +252,10 @@ const openCompiler = () => {
           @click="isVisualizerSupported ? openVisualizer() : null" 
           :title="isVisualizerSupported ? 'Visualize with Python Tutor' : 'Visualizer is not available for this programming language'"
         >
-          <!-- <svg class="oc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="oc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
-          </svg> -->
+          </svg>
           Visualize
         </button>
       </div>
@@ -250,11 +271,13 @@ const openCompiler = () => {
         allowfullscreen
         sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
         id="compiler-text-area"
+        @load="onIframeLoad"
       ></iframe>
     </div>
 
     <!-- ── Python Tutor Modal ─────────────────────────────────────────── -->
     <Teleport to="body">
+      <Transition name="fade">
       <div v-if="showVisualizer" class="pt-overlay" @click.self="showVisualizer = false" style="z-index: 2;">
         <div class="pt-modal">
           <div class="pt-modal-header">
@@ -275,12 +298,14 @@ const openCompiler = () => {
               </button>
             </div>
           </div>
-          <iframe :src="visualizerUrl" class="pt-frame" frameborder="0"></iframe>
+          <iframe :src="visualizerUrl" class="pt-frame" frameborder="0" style="padding: 20px;"></iframe>
         </div>
       </div>
+      </Transition>
     </Teleport>
 
     <Teleport to="body">
+      <Transition name="fade">
       <div v-if="showCompiler" class="pt-overlay" @click.self="showCompiler = false" style="z-index: 1;">
         <div class="pt-modal">
           <div class="pt-modal-header">
@@ -294,7 +319,7 @@ const openCompiler = () => {
             </div>
             <div class="pt-modal-actions">
               <button 
-                class="oc-pill oc-pill--visualize" 
+                style="padding: 6px 10px; font-size: .7rem;" class="oc-pill oc-pill--visualize" 
                 :class="{ 'oc-pill--disabled': !isVisualizerSupported }"
                 @click="isVisualizerSupported ? openVisualizer() : null" 
                 :title="isVisualizerSupported ? 'Visualize with Python Tutor' : 'Visualizer is not available for this programming language'"
@@ -314,15 +339,35 @@ const openCompiler = () => {
             </div>
           </div>
           <iframe style="height:100%;"
-        ref="ocFrameRef"
-        :src="oneCompilerUrl"
-        class="oc-frame"
-        frameborder="0"
-        allowfullscreen
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
-      ></iframe>
+            ref="ocFrameRef"
+            :src="oneCompilerUrl"
+            class="oc-frame"
+            frameborder="0"
+            allowfullscreen
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+            @load="onIframeLoad"
+          ></iframe>
         </div>
       </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ── Visualizer Warning Modal ──────────────────────────────────── -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showVisualizerWarning" class="pt-overlay" @click.self="showVisualizerWarning = false" style="z-index: 10;">
+          <div class="vw-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="vw-icon">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p class="vw-title">No Code to Visualize</p>
+            <p class="vw-text">Please write and run your code in the editor first, then click Visualize.</p>
+            <button class="vw-btn" @click="showVisualizerWarning = false">Got it</button>
+          </div>
+        </div>
+      </Transition>
     </Teleport>
     
   </div>
@@ -335,11 +380,10 @@ const openCompiler = () => {
 .oc-slide {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
   flex: 1 1 auto;
   border-radius: 5px;
   overflow: hidden;
-  /* background-color: pink; */
 }
 
 /* ── Header bar ──────────────────────────────────────────────────────── */
@@ -347,11 +391,12 @@ const openCompiler = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
+  padding: 6px 10px;
   
-  background: rgba(2, 6, 23, 0.85);
+  background: #232323e9;
   flex-shrink: 0;
   gap: 10px;
+  height: 35px;
 }
 
 .oc-header-left {
@@ -393,26 +438,26 @@ const openCompiler = () => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.76rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.6rem;
   font-weight: 700;
   cursor: pointer;
   border: none;
   text-decoration: none;
   transition: all 0.15s ease;
   flex-shrink: 0;
+  padding: 2px 6px;
 }
 
 .oc-pill--visualize {
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
-  box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+  /* box-shadow: 0 2px 8px rgba(99,102,241,0.35); */
 }
 .oc-pill--visualize:hover {
   background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99,102,241,0.45);
+  /* box-shadow: 0 4px 12px rgba(99,102,241,0.45); */
 }
 
 .oc-pill--link {
@@ -423,7 +468,7 @@ const openCompiler = () => {
 .oc-pill--link:hover {
   background: rgba(255,255,255,0.12);
   color: #e2e8f0;
-  transform: translateY(-1px);
+  /* transform: translateY(-1px); */
 }
 
 .oc-pill--disabled {
@@ -449,41 +494,43 @@ const openCompiler = () => {
   width: 100%;
   height: 100%; */
   width: 100%;
-  min-height: 230px;
-  /* background-color: palegoldenrod; */
+  height: 100%;
+  /* background-color: palevioletred; */
 }
 
 .oc-frame {
   width: 100%;
   display: block;
   border: none;
-  min-height: 68vh;
+  height: 100%;
   zoom: .7;
 }
 
 /* ── Python Tutor Modal Overlay ──────────────────────────────────────── */
 .pt-overlay {
-  position: fixed;
+ position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.85);
-  backdrop-filter: blur(6px);
-  z-index: 9999;
+  width: 100%;
+  height: 100vh;
+  background: rgba(241, 245, 249, 0.8);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  z-index: 10;
+  font-family: 'Inter', system-ui, sans-serif;
+  box-sizing: border-box;
 }
 
 .pt-modal {
-  width: 96vw;
-  height: 95vh;
-  max-width: 1200px;
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  overflow: hidden;
+  width: 90%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.1);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 25px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.2);
+  height: 80%;
+  box-sizing: border-box;
 }
 
 .pt-modal-header {
@@ -491,8 +538,7 @@ const openCompiler = () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-bottom: 1px solid #334155;
+  background: #232323e9;
   flex-shrink: 0;
   gap: 12px;
 }
@@ -558,4 +604,49 @@ const openCompiler = () => {
   border: none;
   background: white;
 }
+
+/* ── Visualizer Warning Card ─────────────────────────────────────── */
+.vw-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 340px;
+  text-align: center;
+}
+.vw-icon {
+  width: 42px;
+  height: 42px;
+  color: #ef5050;
+}
+.vw-title {
+  color: #2b2b2b;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+}
+.vw-text {
+   color: #2b2b2bca;
+  font-size: .9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+.vw-btn {
+  margin-top: 0.25rem;
+  background: #ef5050;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 28px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+}
+.vw-btn:hover { background: #db3b3b; }
 </style>
