@@ -50,7 +50,8 @@ const helloCode = `public class Main {
         color: #ffffffff; 
         width: 80%; 
         padding-left:10px; 
-        margin-left:-10px
+        margin-left:-10px;
+        border-radius: 5px;
     }
 
     .box4{
