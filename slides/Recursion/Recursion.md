@@ -1,4 +1,12 @@
 ---
+src: ./rec.md
+---
+
+---
+src: ./rec2.md
+---
+
+---
 src: ./slide1.md
 ---
 
