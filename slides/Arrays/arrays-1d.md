@@ -233,7 +233,7 @@ int n = b.length;                  // number of elements -> 5</pre>
 <div class="loop-title">length</div>
 <div class="loop-note"><code>b.length</code> gives the <b>number of elements</b> (here 5). Valid indices run from <b>0</b> to <b>length - 1</b>.</div>
 </div>
-</div>
-</div>
 <div v-click class="footnote"><b>In short:</b> a 1D array stores many values of the <b>same type</b> in one variable, has a <b>fixed size</b>, and each element is accessed by a <b>0-based index</b> from <code>0</code> to <code>length - 1</code>.</div>
+</div>
+</div>
 </div>
