@@ -112,13 +112,71 @@ title: "Looping: Syntax & Explanation"
         margin: 14px 10px 0 10px;
         border-radius: 0 4px 4px 0;
     }
+   
+.slide-wrapper {
+  margin-top: -10px;
+  margin-left: -30px;
+  width: 107%;
+  height: 72vh;
+  font-size: 0.8rem;
+  font-weight: 400;
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  /* background-color: #9B8EC7; */
+}
+
+.navbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 10px;
+  color: #ffffff;
+  position: fixed;
+  width: 94.7%;
+  /* background-color: #9F8383; */
+
+  background-color: #ffffffff;
+  margin-top: -1px;
+  /* border-bottom: 1px solid #5151517b;  */
+}
+
+.navbar > img {
+  height: 30px;
+  
+}
+
+.navbar-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background-color: #ef5050;
+  color: #ffffff;
+  width: 80%;
+  padding-left: 10px;
+  margin-left: -10px;
+  border-radius: 5px;
+}
+
+.slide-body {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+
+  /* background-color: cornflowerblue; */
+  margin-top: 36px;
+} 
 </style>
 
-<div class="box1">
-<div class="box2">
-<h2 class="box3">Looping</h2>
+<div class="slide-wrapper">
+<div class="navbar">
+<h2 class="navbar-title" style="font-size: 1.5rem">Looping Statements</h2>
 <img src="../assets/logo.png"/>
 </div>
+<div class="slide-body">
 <div v-click class="intro">A <b>loop</b> repeats a block of statements as long as a given <b>condition</b> stays true. It saves us from writing the same code again and again. Java provides three looping statements: <b>for</b>, <b>while</b>, and <b>do-while</b>.</div>
 <div class="loop-grid">
 <div v-click class="loop-card">
@@ -149,6 +207,7 @@ title: "Looping: Syntax & Explanation"
     // update
 } while (condition);</pre>
 <div class="loop-note">The body runs <b>first</b>, then the condition is checked. So the body always executes <b>at least once</b>, even if the condition is false. Note the <b>semicolon</b> after <code>while</code>.</div>
+</div>
 </div>
 </div>
 <div v-click class="footnote"><b>Key difference:</b> <b>for</b> and <b>while</b> are <i>entry-controlled</i> (condition checked before the body), while <b>do-while</b> is <i>exit-controlled</i> (condition checked after the body, guaranteeing one execution).</div>
