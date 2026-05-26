@@ -1,4 +1,8 @@
 ---
+src: ./arrays-1d.md
+---
+
+---
 src: ./slide1.md
 ---
 
@@ -16,6 +20,10 @@ src: ./slide4.md
 
 ---
 src: ./slide5.md
+---
+
+---
+src: ./arrays-2d.md
 ---
 
 ---
