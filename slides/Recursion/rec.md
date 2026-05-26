@@ -133,7 +133,7 @@ title: "Recursion: Calling a Function Again & Again"
   margin-top: -10px;
   margin-left: -30px;
   width: 107%;
-  height: 72vh;
+  max-height: 65vh;
   font-size: 0.8rem;
   font-weight: 400;
   overflow-x: auto;
