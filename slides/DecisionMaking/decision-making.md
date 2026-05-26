@@ -113,13 +113,65 @@ title: "Decision Making: Syntax & Explanation"
         margin: 14px 10px 0 10px;
         border-radius: 0 4px 4px 0;
     }
+
+    .slide-wrapper {
+  margin-top: -10px;
+  margin-left: -30px;
+  width: 107%;
+  height: 72vh;
+  font-size: 0.8rem;
+  font-weight: 400;
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  /* background-color: #9B8EC7; */
+}
+
+.navbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 10px;
+  color: #ffffff;
+  position: fixed;
+  width: 94.7%;
+}
+
+.navbar > img {
+  height: 30px;
+}
+
+.navbar-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background-color: #ef5050;
+  color: #ffffff;
+  width: 80%;
+  padding-left: 10px;
+  margin-left: -10px;
+  border-radius: 5px;
+}
+
+.slide-body {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+
+  /* background-color: cornflowerblue; */
+  margin-top: 36px;
+} 
 </style>
 
-<div class="box1">
-<div class="box2">
-<h2 class="box3">Decision Making</h2>
+<div class="slide-wrapper">
+<div class="navbar">
+<h2 class="navbar-title" style="font-size: 1.5rem;">Decision Making</h2>
 <img src="../assets/logo.png"/>
 </div>
+<div class="slide-body">
 <div v-click class="intro">A <b>decision-making</b> statement lets a program <b>choose</b> which block of code to run based on a <b>condition</b> (true or false). Java provides <b>if</b>, <b>if-else</b>, the <b>else-if ladder</b>, and <b>switch</b>.</div>
 <div class="loop-grid">
 <div v-click class="loop-card">
@@ -168,6 +220,7 @@ else
     // ...
 }</pre>
 <div class="loop-note">Compares one value against many <b>cases</b>. Use <b>break</b> to stop fall-through; <b>default</b> handles no match.</div>
+</div>
 </div>
 </div>
 <div v-click class="footnote"><b>When to use what:</b> use <b>if</b> / <b>if-else</b> for one or two outcomes and range checks (e.g. <code>marks &gt; 50</code>); use the <b>else-if ladder</b> for several conditions; use <b>switch</b> when comparing a single variable against many fixed constant values.</div>
