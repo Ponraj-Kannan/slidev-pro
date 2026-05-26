@@ -1,4 +1,8 @@
 ---
+src: ./str.md
+---
+
+---
 src: ./slide1.md
 ---
 
